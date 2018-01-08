@@ -1,4 +1,4 @@
-## 第九章 手把手实现一个类似生宝宝的小程序
+## 手把手实现一个类似敲木鱼的小程序
 
 ### 目录
 
@@ -539,7 +539,7 @@ Page({
 })
 ```
 
-PlayIO.getPlayerData 的代码详见上节或是参考[源码]()。
+PlayIO.getPlayerData 的代码详见上节或是参考[源码](git@github.com:TerenYeung/fish.git)。
 
 
 2.2 群分享功能
