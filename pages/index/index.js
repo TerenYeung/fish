@@ -3,110 +3,99 @@
 
 const
   app = getApp(),
-  AMap = require('../../lib/amap-wx.js'),
-  sites = require('../../io/sites'),
-  utils = require('../../utils/index')
-
-const geo = require('../../lib/node-geo-distance')
+  UserIO = require('../../io/User'),
+  PlayIO = require('../../io/Play'),
+  constants = require('../../config/constants')
 
 Page({
   data: {
-
-    loadHide: true,
-    // curPoint: app.globalData.curPoint,
-    curPoint: '100.165937,25.694973', // 大理古城，测试坐标
-    SITES: app.globalData.TABLE_ID.SITES,
-    currentList: [],
-    noImg:  'https://cloud-minapp-3906.cloud.ifanrusercontent.com/1dwpzjokssiMaFdj.jpeg',
-    weatherIcon: '../../static/img/weather2.png',
-    pageNo: 0, // 当前分页
-    pageSize: 10, // 单页数量
-    offset: 0, //
-    totalPage: 0,  // 总页数
-    totalCount: 0, // 总数量
-    catNo: 0,
-    activeTitle: '风景名胜',
-    interestId: 0,
-    restaurantId: 1,
-    hotelId: 2,
-    shopId: 3,
-    tabBar: [
-      {
-        title: '风景名胜',
-        alias: '风景',
-        id: 0,
-        img: '../../static/img/landscape.png',
-      }, {
-        title: '餐饮服务',
-        alias: '餐饮',
-        id: 1,
-        img: '../../static/img/restaurant.png',
-      }, {
-        title: '住宿服务',
-        alias: '住宿',
-        id: 2,
-        img: '../../static/img/hotel.png',
-      }, {
-        title: '购物服务',
-        alias: '商店',
-        id: 3,
-        img: '../../static/img/store.png',
-      }
-    ]
+    user: null,
+    // http://www.easyicon.net/language.en/iconsearch/wooden%20fish/
+    bannerBgList: [
+      '../../static/img/blue-fish.png',
+      '../../static/img/demo-fish.png',
+      '../../static/img/yellow-fish.png',
+      '../../static/img/ugly-fish.png',
+    ],
+    totalCounts: 0,
+    rankImg: '../../static/img/rank.png',
   },
 
-  onLoad(options) {
+  onLoad(opts) {
+    // this.getUserInfo()
+  },
 
-    let opts = {
-      ctx: this,
-      isRefresh: true,
+  onShow() {
+    this.getUserInfo()
+  },
+
+  getUserInfo() {
+    // 首次进入页面先判断用户是否为新用户
+    let userInfo = wx.BaaS.storage.get('userinfo')
+    UserIO.getUser({uid: userInfo.id})
+      .then(res => {
+        // console.log('user', res)
+        if (!res.data.objects.length) {
+          UserIO.addUser()
+          this.setData({
+            user: {
+              name: userInfo.nickName,
+              uid: userInfo.id,
+              avatar_url: userInfo.avatarUrl,
+              groups_id: null,
+              groups_info: null,
+            }
+          })
+        } else {
+          let data = res.data.objects[0]
+          let user = Object.assign(data, {
+            groups_info: data.groups_info.map
+            (item => {return JSON.parse(item)}),
+          })
+          this.setData({user: data})
+
+          // 获取用户当天在所有群组的生崽数的数据
+          PlayIO.getPlayerData({
+            uid: userInfo.id,
+          })
+          .then(res => {
+            let totalPlayData = res.data.objects
+            let totalCounts = 0
+            totalPlayData.forEach(item => {
+              totalCounts += item.counts
+            })
+
+            this.setData({
+              totalCounts,
+            })
+          })
+        }
+      })
+      .catch(res => {})
+  },
+
+  getUserPlayData() {
+    let {user} = this.data
+    let opt = {
+      uid: user.uid,
     }
-    sites.getRegionSites(opts)
-  },
-  
-  changeCat(e) {
-    let catId = e.currentTarget.dataset.catid,
-        activeTitle = e.currentTarget.dataset.title
 
-    this.setData({
-      catNo: catId,
-      activeTitle,
-    })
-
-    let opts = {
-      ctx: this,
-      isRefresh: true,
-    }
-    sites.getRegionSites(opts)
   },
 
-  bindLower(e) {
-    console.log('lower')
-
-    let opts = {
-      isRefresh: false,
-      ctx: this,
-    }
-    sites.getRegionSites(opts)
+  shareGame(e) {
+    let url = constants.ROUTES.SHARE
+    wx.navigateTo({url})
   },
 
-  goToWeather() {
-    let weather = JSON.stringify(this.data.weather)
-    let url = `/pages/weather/weather`
-
-    wx.navigateTo({
-      url,
-    })
+  goToRank(e) {
+    let url = constants.ROUTES.RANK
+    wx.navigateTo({url})
   },
 
-  goThere(e) {
-    let start = e.currentTarget.dataset.start,
-        end = e.currentTarget.dataset.end
-    
-    let url =  `/pages/route/route?start=${start}&&end=${end}`
-
-    wx.navigateTo({
-      url,
-    })
+  goToGroup(e) {
+    let {user} = this.data
+    let gid = e.target.dataset.gid
+    let url = constants.ROUTES.GROUP + '?gid=' + gid + '&user=' + JSON.stringify(user)
+    wx.navigateTo({url})
   }
 })

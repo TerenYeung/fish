@@ -1,37 +1,80 @@
+const formatTime = timestamps => {
+  let d = new Date(timestamps * 1000)
 
-const distanceSimplify = (opts) => {
-  let {
-    curPoint,
-    location,
-  } = opts
-  
-  const R = 6367000.0 // 地球半径
-  let start = point2Json(curPoint),
-      end = point2Json(location)
-      
-  let dx = start.longitude - end.longitude, // 经度差
-      dy = start.latitude - end.latitude, // 纬度差
-      avg = (start.latitude + end.latitude) / 2, // 平均纬度
-      lx = R * toRadians(dx) * Math.cos(toRadians(avg)), // 东西距离
-      ly = R * toRadians(dy) // 南北距离
+  let
+    year = d.getFullYear(),
+    month = (d.getMonth() + 1),
+    date = d.getDate(),
+    hours = d.getHours(),
+    minutes = d.getMinutes(),
+    seconds = d.getSeconds()
 
-  return parseInt(Math.sqrt(lx * lx + ly * ly))
-}
-
-const toRadians = (deg) => {
-  return deg * Math.PI / 180
-}
-
-const point2Json = (point) => {
-  let pointArr = point.split(',')
+  hours = hours < 10 ? "0" + hours : hours
+  minutes = minutes < 10 ? "0" + minutes : minutes
+  seconds = seconds < 10 ? "0" + seconds : seconds
 
   return {
-    longitude: parseFloat(pointArr[0]),
-    latitude: parseFloat(pointArr[1]),
+    year,
+    month,
+    date,
+    hours,
+    minutes,
+    seconds,
+  }
+}
+
+const isToday = target => {
+  let d = new Date()
+  let t = new Date(target * 1000)
+  return t.getDate() == d.getDate() && t.getMonth() == d.getMonth() && t.getFullYear() == d.getFullYear()
+}
+
+const getTodayTimestampFromZero = () => {
+  let d = new Date()
+  d.setHours(0)
+  d.setMinutes(0)
+  d.setSeconds(0)
+  d.setMilliseconds(0)
+  let unixTimeStamp = Math.floor(d.getTime() / 1000)
+  return unixTimeStamp
+}
+
+
+const debounce = (func, wait, immediate) => {
+  var timeout, args, context, timestamp, result
+
+  var later = function() {
+    var last = Date.now() - timestamp
+
+    if (last < wait && last >= 0) {
+      timeout = setTimeout(later, wait - last)
+    } else {
+      timeout = null
+      if (!immediate) {
+        result = func.apply(context, args)
+        if (!timeout) context = args = null
+      }
+    }
+  }
+
+  return function() {
+    context = this
+    args = arguments
+    timestamp = Date.now()
+    var callNow = immediate && !timeout
+    if (!timeout) timeout = setTimeout(later, wait)
+    if (callNow) {
+      result = func.apply(context, args)
+      context = args = null
+    }
+
+    return result
   }
 }
 
 module.exports = {
-  distanceSimplify,
-  point2Json,
+  formatTime,
+  isToday,
+  getTodayTimestampFromZero,
+  debounce,
 }

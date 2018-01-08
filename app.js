@@ -1,15 +1,16 @@
-//app.js
-const AMap = require('./lib/amap-wx')
+const
+  constants = require('./config/constants'),
+  UserIO = require('./io/User')
 
 App({
-  onLaunch: function() {
+  onLaunch: function(ops) {
     let that = this
 
     // 引入 BaaS SDK
-    require('./lib/sdk-v1.1.0')
+    require('./lib/sdk-v1.1.3')
 
     // 从 BaaS 后台获取 ClientID
-    let clientId = this.globalData.CLIENT_ID
+    let clientId = constants.CLIENT_ID
 
     wx.BaaS.init(clientId)
 
@@ -18,13 +19,35 @@ App({
       wx.BaaS.login()
         .then(res => {
           console.log('BaaS is logined!')
+          let uid = wx.BaaS.storage.get('userinfo').id
+          UserIO.getUser({uid})
+            .then(res => {
+              console.log('user', res)
+              // 将用户添加入 User table
+              if (!res.data.objects.length) UserIO.addUser()
+            })
+            .catch(e => {})
+
         }).catch(err => {
           console.dir(err)
         })
     }
-    
-    this.getSystemInfo()
-    this.getWeather()
+
+    // 判断用户从哪个群组进入页面
+    if(ops.scene == 1044){
+      let shareTicket = ops.shareTicket
+      wx.getShareInfo({
+        shareTicket,
+          complete(res){
+
+            wx.BaaS.wxDecryptData(res.encryptedData, res.iv, 'open-gid').then(decrytedData => {
+              console.log('decrytedData', decrytedData)
+              that.globalData.gid = decrytedData.openGId
+            })
+          }
+      })
+    }
+    // this.getSystemInfo()
   },
 
   getUserId() {
@@ -44,42 +67,8 @@ App({
     })
   },
 
-  getWeather(e) {
-    let aMap = new AMap.AMapWX({
-      key: this.globalData.AMapKey
-    })
-    let _this = this
-    aMap.getWeather({
-      success(res) {
-        console.log('weather', res)
-        _this.globalData.weather = res
-        
-      },
-      fail(err) {
-      }
-    })
-  },
-
-  getCurLocation() {
-    wx.getLocation({
-      type: 'gcj02',
-      success(res) {
-        let {longitude, latitude} = res
-        this.globalData.curPoint = `${longitude},${longitude}`
-      }
-    })
-  },
-
   globalData: {
     systemInfo: {},
-    TABLE_ID: {
-      SITES: 1984,
-    }, // 从 https://cloud.minapp.com/dashboard/ 管理后台的数据表中获取
-
-    CLIENT_ID: '', // 从知晓云开发者平台获取
-
-    AMapKey: '', // 高德地图小程序 SDK key
-    weather: null,
-    curPoint: '',
+    gid: '',
   }
 })

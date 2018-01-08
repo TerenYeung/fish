@@ -1,13 +1,15 @@
 {
   "pages": [
     "pages/index/index",
-    "pages/route/route",
-    "pages/weather/weather"
+    "pages/share/share",
+    "pages/rank/rank",
+    "pages/game/game",
+    "pages/group/group"
   ],
   "window": {
     "backgroundTextStyle": "light",
     "navigationBarBackgroundColor": "#fff",
-    "navigationBarTitleText": "这里是大理",
+    "navigationBarTitleText": "The Creation",
     "navigationBarTextStyle": "black"
   },
   "debug": true
